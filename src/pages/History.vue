@@ -7,7 +7,8 @@
     import Text from "../components/Text.vue"
     import RightArrowIcon from "../icons/RightArrowIcon.vue"
     import Modal from "../components/Modal.vue"
-    import {formatDayLabel, formatTime} from "../utils/DateAndTime.ts";
+    import {formatDayLabel, formatTime} from "../utils/DateAndTime.ts"
+    import { fetch } from "@tauri-apps/plugin-http"
 
     interface CarActionsEntry {
         carNumber: string

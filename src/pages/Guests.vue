@@ -12,6 +12,7 @@
     import {UserData} from "../types/api/UserData.ts"
     import CheckBox from "../components/CheckBox.vue"
     import {useAuthStore} from "../stores/auth.ts"
+    import { fetch } from "@tauri-apps/plugin-http"
 
     interface Yard {
         address: string

@@ -3,6 +3,7 @@
     import NavigationBar from "./components/NavigationBar.vue"
     import {onMounted} from "vue"
     import {useAuthStore} from "./stores/auth.ts"
+    import { fetch } from "@tauri-apps/plugin-http"
 
     onMounted(async () => {
         const body = JSON.stringify({

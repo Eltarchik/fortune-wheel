@@ -11,7 +11,8 @@
     import CarNumberInput from "../components/CarNumberInput.vue"
     import Button from "../components/Button.vue"
     import {validateNumber} from "../utils/CarNumbers.ts"
-    import CheckBox from "../components/CheckBox.vue";
+    import CheckBox from "../components/CheckBox.vue"
+    import { fetch } from "@tauri-apps/plugin-http"
 
     interface UserParam {
         title: string
