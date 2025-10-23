@@ -6,24 +6,29 @@
     import { fetch } from "@tauri-apps/plugin-http"
 
     onMounted(async () => {
-        const body = JSON.stringify({
-            username: "root",
-            password: "root"
-        })
+        try {
+            const body = JSON.stringify({
+                username: "root",
+                password: "root"
+            })
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/token/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body
-        })
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/token/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body
+            })
 
-        if (!response.ok) return
+            if (!response.ok) return
 
-        const token = (await response.json()).access as string
-        const auth = useAuthStore()
-        auth.setToken(token)
+            const token = (await response.json()).access as string
+            const auth = useAuthStore()
+            auth.setToken(token)
+
+        } catch (error) {
+            console.error(error)
+        }
     })
 
 </script>

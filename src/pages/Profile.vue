@@ -187,8 +187,6 @@
             </ContentBlock>
         </div>
 
-        <Text>{{ t }}</Text>
-
         <footer class="footer">
             <Button :on-click="() => {}">Выйти</Button>
         </footer>

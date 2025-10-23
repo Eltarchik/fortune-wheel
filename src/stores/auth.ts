@@ -10,7 +10,7 @@ interface AuthActions {
     logout: () => void
 }
 
-export const useAuthStore = defineStore<"auth", AuthState, AuthActions>('auth', {
+export const useAuthStore = defineStore<"auth", AuthState, {}, AuthActions>('auth', {
     state: () => ({
         token: null
     }),
