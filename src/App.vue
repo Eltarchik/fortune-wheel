@@ -1,5 +1,30 @@
 <script setup lang="ts">
+
     import NavigationBar from "./components/NavigationBar.vue"
+    import {onMounted} from "vue"
+    import {useAuthStore} from "./stores/auth.ts"
+
+    onMounted(async () => {
+        const body = JSON.stringify({
+            username: "root",
+            password: "root"
+        })
+
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/token/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body
+        })
+
+        if (!response.ok) return
+
+        const token = (await response.json()).access as string
+        const auth = useAuthStore()
+        auth.setToken(token)
+    })
+
 </script>
 
 <template>

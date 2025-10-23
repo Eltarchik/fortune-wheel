@@ -58,6 +58,7 @@
         border-radius: 16px;
         width: 100%;
         background-color: #262626;
+        overflow: auto;
     }
     .buttons {
         display: flex;

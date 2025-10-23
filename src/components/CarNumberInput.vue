@@ -1,0 +1,65 @@
+<script setup lang="ts">
+import {computed, nextTick, ref} from "vue"
+    import Heading, {HeadingSize} from "./Heading.vue"
+import {validateNumber} from "../utils/CarNumbers.ts";
+
+    const isEditMode = ref<boolean>(false)
+    const placeholder = "N111NN777"
+
+    const model = defineModel<string>()
+    const inputRef = ref<HTMLInputElement | null>(null)
+
+    const displayedNumber = computed<string>(() => model.value || placeholder)
+    const mainNumber = computed<string>(() => displayedNumber.value.slice(0, 6))
+    const subNumber = computed<string>(() => displayedNumber.value.slice(6))
+
+    const trySetNumber = () => {
+        if (validateNumber(model.value || "")) {
+            model.value = model.value!.toUpperCase()
+
+        } else {
+            model.value = ""
+        }
+    }
+
+    const startEditing = async () => {
+        isEditMode.value = true
+        await nextTick()
+        inputRef.value?.focus()
+    }
+
+</script>
+
+<template>
+    <button v-show="!isEditMode" class="preview" @click="startEditing">
+        <Heading :size="HeadingSize.LARGE" color="#999999">{{ mainNumber }}</Heading>
+        <Heading class="region" color="#999999"  >{{ subNumber }}</Heading>
+    </button>
+    <label v-show="isEditMode" class="edit">
+        <input class="input" type="text" maxlength="9" ref="inputRef" v-model="model" @blur="() => {
+            trySetNumber()
+            isEditMode = false
+        }" />
+    </label>
+</template>
+
+<style scoped lang="scss">
+    .preview, .edit {
+        display: flex;
+        gap: 4px;
+        height: 40px;
+        padding-inline: 8px;
+        background-color: #D9D9D9;
+        border-radius: 4px;
+    }
+
+    .region {
+        padding-top: 2px;
+    }
+
+    .input {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+</style>

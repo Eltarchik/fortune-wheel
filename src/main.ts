@@ -5,6 +5,7 @@ import "./assets/styles/global.scss"
 import "./assets/styles/theme.scss"
 import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router"
 import Cars from "./pages/Cars.vue"
+import {createPinia} from "pinia"
 
 const routes: Readonly<RouteRecordRaw[]> = [
     { name: 'profile', path: '/profile', component: Profile },
@@ -16,4 +17,6 @@ const router = createRouter({
     routes
 })
 
-createApp(App).use(router).mount("#app")
+const pinia = createPinia()
+
+createApp(App).use(router).use(pinia).mount("#app")

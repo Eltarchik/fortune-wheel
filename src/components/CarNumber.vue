@@ -15,11 +15,12 @@
 <template>
     <div class="card">
         <Heading color="#000000">{{ mainNumber }}</Heading>
-        <Text v-if="subNumber" color="#000000">{{ subNumber }}</Text>
+        <Text v-if="subNumber" color="#000000" class="region">{{ subNumber }}</Text>
     </div>
 </template>
 
 <style scoped lang="scss">
+
     .card {
         display: flex;
         gap: 4px;
@@ -29,4 +30,9 @@
         background-color: #D9D9D9;
         border-radius: 4px;
     }
+
+    .region {
+        padding-top: 2px;
+    }
+
 </style>
