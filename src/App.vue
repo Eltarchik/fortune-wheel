@@ -8,8 +8,8 @@
     onMounted(async () => {
         try {
             const body = JSON.stringify({
-                username: "root",
-                password: "root"
+                username: import.meta.env.VITE_ADMIN_LOGIN,
+                password: import.meta.env.VITE_ADMIN_PASSWORD
             })
 
             const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/token/`, {
