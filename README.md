@@ -1,7 +1,14 @@
-# Tauri + Vue + TypeScript
+## 1] Убедись, что у тебя установлены:
+- Node.js
+- Менеджер пакетов npm или bun 
+- Rust 
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 2] Установи зависимости:
+- `bun i` или `npm i`
+- `rustup target add aarch64-linux-android armv7-linux-androideabi`
 
-## Recommended IDE Setup
+## 3] Чтобы запустить приложение в режиме разработки, выполни
+`bun tauri android dev` или `npm tauri android dev`
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## 4] Чтобы собрать приложение в .apk, выполни
+`bun tauri android build` или `npx tauri android dev`

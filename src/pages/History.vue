@@ -81,7 +81,6 @@
         const result: EntriesWithDay[] = []
 
         for (const [day, dayEntries] of Object.entries(byDay)) {
-            // сортируем по номеру авто и времени
             dayEntries.sort((a, b) => {
                 const nameDiff = a.auto.auto_number.localeCompare(b.auto.auto_number)
                 if (nameDiff !== 0) return nameDiff

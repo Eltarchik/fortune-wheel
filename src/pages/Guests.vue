@@ -59,8 +59,6 @@
                 id: data.yard_id
             }))
 
-        console.log(userData)
-
         if (!yards.value.length) return
         yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ id }) => [id, false]))
         yardsCheckboxValues.value[yards.value[0].id] = true
