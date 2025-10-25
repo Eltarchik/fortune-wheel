@@ -9,8 +9,10 @@
 - `bun i` или `npm i`
 - `rustup target add aarch64-linux-android armv7-linux-androideabi`
 
-## 3] Чтобы запустить приложение в режиме разработки, выполни
+## 3] Заполни .env
+
+## 4] Чтобы запустить приложение в режиме разработки, выполни
 `bun tauri android dev` или `npm tauri android dev`
 
-## 4] Чтобы собрать приложение в .apk, выполни
+## 5] Чтобы собрать приложение в .apk, выполни
 `bun tauri android build` или `npx tauri android build`
