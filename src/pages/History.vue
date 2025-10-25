@@ -198,6 +198,7 @@
         flex-direction: column;
         width: 100%;
         padding-inline: 20px;
+        padding-bottom: 40px;
     }
 
     .yard {
@@ -210,7 +211,7 @@
 
     .days {
         display: flex;
-        flex-direction: column;
+        flex-direction: column-reverse;
         gap: 20px;
         margin-top: 20px;
     }

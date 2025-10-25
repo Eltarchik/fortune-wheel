@@ -19,7 +19,7 @@
         id: number
     }
 
-    const mockUserId = 3
+    const mockUserId = 1
 
     const currentGuests = ref<Guest[]>([])
     const currentTime = ref<Date>(new Date())
@@ -44,6 +44,8 @@
             await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current-guests/?invite_by_id=${mockUserId}`)
         const guestsData: GuestsData = await guestsResponse.json()
 
+        console.log(guestsData)
+
         currentGuests.value = guestsData.active_guests
         currentTime.value = new Date(guestsData.current_time)
 
@@ -52,10 +54,12 @@
 
         yards.value = Object
             .entries(userData.addresses)
-            .map(([address, _], i) => ({
+            .map(([address, data]) => ({
                 address,
-                id: i
+                id: data.yard_id
             }))
+
+        console.log(userData)
 
         if (!yards.value.length) return
         yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ id }) => [id, false]))
@@ -98,6 +102,7 @@
     }
 
     const addGuest = async () => {
+        console.log(guestYardId.value)
         if (!newGuestNumber.value || guestYardId.value === null) return
 
         const [hours, minutes] = timeToEnter.value.split(":").map(Number)
@@ -106,24 +111,24 @@
         entryTimeout.setHours(entryTimeout.getHours() + hours)
         entryTimeout.setMinutes(entryTimeout.getMinutes() + minutes)
 
-        console.log(entryTimeout.getTime())
-
         const auth = useAuthStore()
 
-        const r = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/create-guestentry/`, {
+        const body = JSON.stringify({
+            guest_auto_number: newGuestNumber.value,
+            yard_id: guestYardId.value,
+            entry_timeout: entryTimeout.toISOString()
+        })
+
+        console.log(body)
+
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/create-guestentry/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${auth.token}`
             },
-            body: JSON.stringify({
-                guest_auto_number: newGuestNumber.value,
-                yard_id: 2,
-                entry_timeout: entryTimeout.toISOString()
-            })
+            body
         })
-
-        console.log(r)
     }
 
 </script>
@@ -168,7 +173,7 @@
         </button>
         <ContentBlock title="Активные">
             <div class="active-guests">
-                <TimelineWithNumber number="A123BC52" v-for="guest in currentGuests" :key="guest.id">
+                <TimelineWithNumber :number="guest.guest_auto_number" v-for="guest in currentGuests" :key="guest.id">
                     <Text v-if="guest.entry_timeout" class="timeline-entry-text">
                         Осталось {{ getRemainingTime(guest.entry_timeout) }} ({{ guest.yard_address }})
                     </Text>

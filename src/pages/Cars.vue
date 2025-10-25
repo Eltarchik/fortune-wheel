@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
-    import {ref} from "vue";
-    import Guests from "./Guests.vue";
-    import History from "./History.vue";
+    import {ref} from "vue"
+    import Guests from "./Guests.vue"
+    import History from "./History.vue"
 
     enum CarsPageSection {
         GUESTS, HISTORY

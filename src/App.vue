@@ -50,8 +50,8 @@
       display: flex;
       flex-direction: column;
       padding-top: 20px;
-      height: 100vh;
-      max-height: 100vh;
+      min-height: 100vh;
+      height: 100%;
       background-image: linear-gradient(#2A2D32, #131313);
   }
 
