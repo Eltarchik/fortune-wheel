@@ -13,4 +13,4 @@
 `bun tauri android dev` или `npm tauri android dev`
 
 ## 4] Чтобы собрать приложение в .apk, выполни
-`bun tauri android build` или `npx tauri android dev`
+`bun tauri android build` или `npx tauri android build`
