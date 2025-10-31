@@ -12,6 +12,9 @@ import {validateNumber} from "../utils/CarNumbers.ts";
     const displayedNumber = computed<string>(() => model.value || placeholder)
     const mainNumber = computed<string>(() => displayedNumber.value.slice(0, 6))
     const subNumber = computed<string>(() => displayedNumber.value.slice(6))
+    const numberColor = computed<string>(() =>
+        displayedNumber.value === model.value?.toString() ? "#000000" : "#999999"
+    )
 
     const trySetNumber = () => {
         if (validateNumber(model.value || "")) {
@@ -32,8 +35,8 @@ import {validateNumber} from "../utils/CarNumbers.ts";
 
 <template>
     <button v-show="!isEditMode" class="preview" @click="startEditing">
-        <Heading :size="HeadingSize.LARGE" color="#999999">{{ mainNumber }}</Heading>
-        <Heading class="region" color="#999999"  >{{ subNumber }}</Heading>
+        <Heading :size="HeadingSize.LARGE" :color="numberColor">{{ mainNumber }}</Heading>
+        <Heading class="region" :color="numberColor"  >{{ subNumber }}</Heading>
     </button>
     <label v-show="isEditMode" class="edit">
         <input class="input" type="text" maxlength="9" ref="inputRef" v-model="model" @blur="() => {
