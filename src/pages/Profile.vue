@@ -13,6 +13,7 @@
     import {validateNumber} from "../utils/CarNumbers.ts"
     import CheckBox from "../components/CheckBox.vue"
     import { fetch } from "@tauri-apps/plugin-http"
+    import {useRouter} from "vue-router"
 
     interface UserParam {
         title: string
@@ -51,11 +52,11 @@
 
     const mockUserId = 3
 
-    let modalIsOpen = ref<boolean>(false)
-    let addingNumberMode = ref<boolean>(false)
-    let modalData = ref<ModalData | null>(null)
+    const router = useRouter()
 
-    const selectedYards = ref<Record<number, boolean>>({})
+    const modalIsOpen = ref<boolean>(false)
+    const addingNumberMode = ref<boolean>(false)
+    const modalData = ref<ModalData | null>(null)
 
     const refNewNumber = ref<string | undefined>(undefined)
 
@@ -69,28 +70,21 @@
     }
 
     const onModalClose = () => {
-        for (const id in selectedYards.value) {
-            selectedYards.value[+id] = false
-        }
-
         modalIsOpen.value = false
         addingNumberMode.value = false
         modalData.value = null
     }
 
     const addNumber = async () => {
-        if (!refNewNumber.value || !validateNumber(refNewNumber.value)) return
+        if (!refNewNumber.value || !validateNumber(refNewNumber.value) || ! modalData.value) return
 
         const body = JSON.stringify({
             auto_number: refNewNumber.value,
             owner: mockUserId,
-                yard_id: Object
-                .entries(selectedYards.value)
-                .filter(([_, isSelected]) => isSelected)
-                .map(([id]) => Number(id))
+            yard_id: [modalData.value.yardId]
         })
 
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/yard/add-auto/`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/yard/add-auto/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -98,15 +92,15 @@
             body
         })
 
-        console.log(body)
+        if (!response.ok) return
 
+        addingNumberMode.value = false
+        modalData.value.numbers.push(refNewNumber.value)
         refNewNumber.value = undefined
     }
 
     const enterAddingNumbersMode = () => {
         if (!modalData.value) return
-
-        selectedYards.value[modalData.value.yardId] = true
         addingNumberMode.value = true
     }
 
@@ -125,7 +119,6 @@
             }))
 
         if (!userInfo.value.courtyards.length) return
-        selectedYards.value = Object.fromEntries(userInfo.value.courtyards.map(({ id }) => [id, false]))
     })
 
 </script>
@@ -136,44 +129,29 @@
             <ContentBlock title="Мои дворы">
                 <div class="courtyards">
                     <Modal v-model:show="modalIsOpen"
-                           :title="addingNumberMode ? 'Добавление автомобиля' : modalData?.title"
+                           hideButtons
                            :on-close="onModalClose"
                     >
-                        <div v-if="!addingNumberMode" class="numbers-modal">
-                            <button class="add-number-button" @click="enterAddingNumbersMode">
-                                <PlusIcon color="#000000" />
+                        <div class="numbers-modal">
+                            <CarNumber :number="number" large v-for="number in modalData?.numbers" :key="number" />
+                            <button v-if="!addingNumberMode" class="add-number" @click="enterAddingNumbersMode">
+                                <PlusIcon color="#000000" size="32" />
                             </button>
-                            <CarNumber :number="number" v-for="number in modalData?.numbers" :key="number" />
-                        </div>
-
-                        <div v-if="addingNumberMode" class="adding-numbers-modal">
-                            <CarNumberInput v-model="refNewNumber"/>
-                            <div class="address-row">
-                                <CheckBox v-model="selectedYards[courtyard.id]"
-                                          v-for="courtyard in userInfo.courtyards"
-                                          :key="courtyard.id"
-                                >
-                                    {{courtyard.address}}
-                                </CheckBox>
+                            <div v-if="addingNumberMode" class="add-number-form">
+                                <CarNumberInput v-model="refNewNumber" class="add-number-input"/>
+                                <button class="add-number-button" @click="addNumber">
+                                    <PlusIcon color="#000000" size="32" />
+                                </button>
                             </div>
                         </div>
-
-                        <template v-if="addingNumberMode" #buttons>
-                            <Button accent
-                                    :on-click="() => {
-                                        addNumber()
-                                        onModalClose()
-                                    }"
-                            >Добавить</Button>
-                        </template>
                     </Modal>
-                    <div class="courtyard" v-for="courtyard in userInfo.courtyards" :key="courtyard.id">
-                        <Text color="#FFFFFF">{{ courtyard.address }}</Text>
-                        <button class="manage-cars" @click="showModal(courtyard)">
-                            <Text color="#3F88E4">Управление автомобилями</Text>
-                            <RightArrowIcon color="#3F88E4"/>
-                        </button>
-                    </div>
+                    <button v-for="courtyard in userInfo.courtyards" :key="courtyard.id"
+                            class="manage-cars"
+                            @click="showModal(courtyard)"
+                    >
+                        <Text color="#3F88E4">{{ courtyard.address }}</Text>
+                        <RightArrowIcon color="#3F88E4"/>
+                    </button>
                 </div>
             </ContentBlock>
 
@@ -188,7 +166,7 @@
         </div>
 
         <footer class="footer">
-            <Button :on-click="() => {}">Выйти</Button>
+            <Button :on-click="() => router.push('/auth')">Выйти</Button>
         </footer>
     </div>
 </template>
@@ -215,12 +193,6 @@
         display: flex;
         flex-direction: column;
         gap: 16px;
-    }
-
-    .courtyard {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
     }
 
     .manage-cars {
@@ -254,31 +226,43 @@
 
     .numbers-modal {
         display: flex;
-        gap: 8px;
+        flex-direction: column-reverse;
+        align-items: center;
+        gap: 20px;
+        padding-block: 12px;
+        max-height: 400px;
         overflow: auto;
         scrollbar-width: none;
+
+        .add-number {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 40px;
+            width: 200px;
+            background-color: #3F88E4;
+            border-radius: 8px;
+        }
+
+        .add-number-form {
+            display: flex;
+        }
+
+        .add-number-input {
+            z-index: 2;
+        }
 
         .add-number-button {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 28px;
-            min-width: 28px;
+            height: 40px;
+            width: 48px;
+            margin-left: -8px;
+            padding-left: 6px;
             background-color: #3F88E4;
-            border-radius: 50%;
-        }
-    }
-
-    .adding-numbers-modal {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-
-        .address-row {
-            display: flex;
-            gap: 8px;
-            overflow: auto;
-            scrollbar-width: none;
+            border-radius: 0 8px 8px 0;
+            z-index: 1;
         }
     }
 

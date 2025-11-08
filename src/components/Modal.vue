@@ -26,7 +26,6 @@
                 <Heading v-if="title">{{title}}</Heading>
                 <slot />
                 <div v-if="!hideButtons" class="buttons">
-                    <Button :on-click="close" :fill-width="true">Выйти</Button>
                     <slot name="buttons"/>
                 </div>
             </div>
@@ -54,7 +53,7 @@
         flex-direction: column;
         gap: 16px;
         padding: 20px;
-        margin-inline: 40px;
+        margin-inline: 20px;
         border-radius: 16px;
         width: 100%;
         background-color: #262626;

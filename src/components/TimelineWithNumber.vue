@@ -22,9 +22,6 @@
         <CarNumber :number="number" class="number"/>
         <div class="track">
             <div class="strip" :class="{ disabled: disabled }"></div>
-            <div class="circle">
-                <div v-if="fillingLevel >= 100" class="full-indicator"></div>
-            </div>
         </div>
         <slot />
     </div>
@@ -64,26 +61,6 @@
             &.disabled {
                 background-image: linear-gradient(#FFFFFF, #474747);
             }
-        }
-
-        .circle {
-            position: absolute;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            right: -4px;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            border: 2px solid #FFFFFF;
-        }
-
-        .full-indicator {
-            display: flex;
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-            background-image: linear-gradient(#9EECD9, #2FB8FF);
         }
     }
 

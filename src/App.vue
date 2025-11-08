@@ -3,16 +3,20 @@
     import NavigationBar from "./components/NavigationBar.vue"
     import {onMounted} from "vue"
     import {useAuthStore} from "./stores/auth.ts"
-    import { fetch } from "@tauri-apps/plugin-http"
     import {useRouter} from "vue-router"
+    import {useRoute, useRouter} from "vue-router"
 
     onMounted(async () => {
         const router = useRouter()
-        await router.push('/cars')
+        const route = useRoute()
+
+        if (route.path === '/') {
+            await router.push('/cars')
+        }
 
         try {
             const body = JSON.stringify({
-                username: import.meta.env.VITE_ADMIN_LOGIN,
+                phone: import.meta.env.VITE_ADMIN_LOGIN,
                 password: import.meta.env.VITE_ADMIN_PASSWORD
             })
 

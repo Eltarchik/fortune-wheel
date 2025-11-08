@@ -200,6 +200,13 @@
         padding-bottom: 40px;
     }
 
+    .yards {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        gap: 12px
+    }
+
     .yard {
         display: flex;
         gap: 4px;

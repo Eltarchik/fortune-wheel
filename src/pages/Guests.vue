@@ -19,9 +19,18 @@
         id: number
     }
 
+    interface GuestData {
+        id: number
+        carNumber: string
+        yardAddress: string
+        timeLeft: string
+        timelinePercent: number
+        alreadyInYard: boolean
+    }
+
     const mockUserId = 1
 
-    const currentGuests = ref<Guest[]>([])
+    const currentGuestsData = ref<GuestData[]>([])
     const currentTime = ref<Date>(new Date())
 
     const yards = ref<Yard[]>([])
@@ -44,9 +53,15 @@
             await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current-guests/?invite_by_id=${mockUserId}`)
         const guestsData: GuestsData = await guestsResponse.json()
 
-        console.log(guestsData)
+        currentGuestsData.value = guestsData.active_guests.map(guest => ({
+            id: guest.id,
+            carNumber: guest.guest_auto_number,
+            yardAddress: guest.yard_address,
+            alreadyInYard: guest.enter_time !== null,
+            timeLeft: getRemainingTime(guest.entry_timeout),
+            timelinePercent: getTimelinePercent(guest.created_at, guest.entry_timeout)
+        }))
 
-        currentGuests.value = guestsData.active_guests
         currentTime.value = new Date(guestsData.current_time)
 
         const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/account/${mockUserId}/`)
@@ -63,6 +78,17 @@
         yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ id }) => [id, false]))
         yardsCheckboxValues.value[yards.value[0].id] = true
     })
+
+    const getTimelinePercent = (startTimeString: string, endTimeString: string): number => {
+        const start = new Date(startTimeString)
+        const end = new Date(endTimeString)
+        const now = new Date()
+
+        const timelineLength = end.getTime() - start.getTime()
+        const filledTimelineLength = now.getTime() - start.getTime()
+
+        return Math.round(100 / timelineLength * filledTimelineLength)
+    }
 
     const getRemainingTime = (targetTimeString: string) => {
         const target = new Date(targetTimeString)
@@ -100,7 +126,6 @@
     }
 
     const addGuest = async () => {
-        console.log(guestYardId.value)
         if (!newGuestNumber.value || guestYardId.value === null) return
 
         const [hours, minutes] = timeToEnter.value.split(":").map(Number)
@@ -117,8 +142,6 @@
             entry_timeout: entryTimeout.toISOString()
         })
 
-        console.log(body)
-
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/create-guestentry/`, {
             method: "POST",
             headers: {
@@ -134,7 +157,7 @@
 <template>
     <div class="guests">
         <Modal title="" v-model:show="showModal" :on-close="onModalClose">
-            <CarNumberInput v-model="newGuestNumber"/>
+            <CarNumberInput class="guest-car-number-input" v-model="newGuestNumber"/>
             <div class="address-row">
                 <CheckBox v-model="yardsCheckboxValues[yard.id]"
                           v-for="yard in yards"
@@ -155,7 +178,7 @@
             </div>
 
             <template #buttons>
-                <Button accent
+                <Button accent class="add-guest-button"
                         :on-click="() => {
                             addGuest()
                             onModalClose()
@@ -163,7 +186,7 @@
                 >Добавить</Button>
             </template>
         </Modal>
-        <button class="add-guest"
+        <button class="open-add-guest-modal"
                 @click="openModal"
         >
             <Text color="#3F88E4">Добавить гостя</Text>
@@ -171,11 +194,14 @@
         </button>
         <ContentBlock title="Активные">
             <div class="active-guests">
-                <TimelineWithNumber :number="guest.guest_auto_number" v-for="guest in currentGuests" :key="guest.id">
-                    <Text v-if="guest.entry_timeout" class="timeline-entry-text">
-                        Осталось {{ getRemainingTime(guest.entry_timeout) }} ({{ guest.yard_address }})
+                <TimelineWithNumber :number="guest.carNumber" :filling-level="guest.timelinePercent" v-for="guest in currentGuestsData" :key="guest.id">
+                    <Text v-if="!guest.alreadyInYard" class="timeline-entry-text" color="#84EAF6">
+                        {{ guest.yardAddress }}
                     </Text>
-                    <Text v-else class="timeline-entry-text">Уже во дворе ({{ guest.yard_address }})</Text>
+                    <Text v-if="!guest.alreadyInYard" class="timeline-entry-text">
+                        Осталось {{ guest.timeLeft }}
+                    </Text>
+                    <Text v-else class="timeline-entry-text">Уже во дворе ({{ guest.yardAddress }})</Text>
                 </TimelineWithNumber>
             </div>
         </ContentBlock>
@@ -191,12 +217,16 @@
         padding-inline: 20px;
     }
 
-    .add-guest {
+    .open-add-guest-modal {
         display: flex;
         gap: 4px;
         align-items: center;
         align-self: center;
         margin-block: 16px;
+    }
+
+    .add-guest-button {
+        width: 100%;
     }
 
     .active-guests {
@@ -208,6 +238,10 @@
 
     .timeline-entry-text {
         margin-top: 8px;
+    }
+
+    .guest-car-number-input {
+        width: 100%;
     }
 
     .address-row {
