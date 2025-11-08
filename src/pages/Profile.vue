@@ -128,12 +128,10 @@
         <div class="content">
             <ContentBlock title="Мои дворы">
                 <div class="courtyards">
-                    <Modal v-model:show="modalIsOpen"
-                           hideButtons
+                    <Modal :show="modalIsOpen"
                            :on-close="onModalClose"
                     >
                         <div class="numbers-modal">
-                            <CarNumber :number="number" large v-for="number in modalData?.numbers" :key="number" />
                             <button v-if="!addingNumberMode" class="add-number" @click="enterAddingNumbersMode">
                                 <PlusIcon color="#000000" size="32" />
                             </button>
@@ -143,6 +141,7 @@
                                     <PlusIcon color="#000000" size="32" />
                                 </button>
                             </div>
+                            <CarNumber :number="number" large v-for="number in [...modalData?.numbers].reverse()" :key="number" />
                         </div>
                     </Modal>
                     <button v-for="courtyard in userInfo.courtyards" :key="courtyard.id"
@@ -226,7 +225,7 @@
 
     .numbers-modal {
         display: flex;
-        flex-direction: column-reverse;
+        flex-direction: column;
         align-items: center;
         gap: 20px;
         padding-block: 12px;
@@ -238,7 +237,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 40px;
+            min-height: 40px;
             width: 200px;
             background-color: #3F88E4;
             border-radius: 8px;

@@ -1,31 +1,24 @@
 <script setup lang="ts">
+
     import Heading from "./Heading.vue"
-    import Button from "./Button.vue"
 
     interface Props {
         show: Boolean
         title?: string
-        hideButtons?: boolean
         onClose: () => void
     }
 
-    const { show, title = "", hideButtons = false, onClose } = defineProps<Props>()
+    const { show, title, onClose } = defineProps<Props>()
 
-    const emit = defineEmits(['update:show'])
-
-    const close = () => {
-        emit('update:show', false)
-        onClose?.()
-    }
 </script>
 
 <template>
     <Teleport to="body">
-        <div v-if="show" class="bg" @click.self="close">
+        <div v-if="show" class="bg" @click.self="onClose">
             <div class="modal">
                 <Heading v-if="title">{{title}}</Heading>
                 <slot />
-                <div v-if="!hideButtons" class="buttons">
+                <div v-if="$slots.buttons" class="buttons">
                     <slot name="buttons"/>
                 </div>
             </div>

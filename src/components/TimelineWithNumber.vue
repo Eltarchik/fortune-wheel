@@ -49,14 +49,14 @@
         margin-top: -4px;
         margin-right: 4px;
         border-radius: 4px;
-        background-color: #000000CC;
+        background-color: #00000080;
         z-index: 1;
 
         .strip {
             height: 100%;
             width: v-bind(fillingPercent);
             border-radius: 4px;
-            background-image: linear-gradient(#2FB8FF, #9EECD9);
+            background-image: linear-gradient(#9EECD9, #2FB8FF);
 
             &.disabled {
                 background-image: linear-gradient(#FFFFFF, #474747);

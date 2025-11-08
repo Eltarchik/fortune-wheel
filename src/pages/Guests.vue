@@ -5,7 +5,7 @@
     import ContentBlock from "../components/ContentBlock.vue"
     import TimelineWithNumber from "../components/TimelineWithNumber.vue"
     import {computed, onMounted, ref} from "vue"
-    import {Guest, GuestsData} from "../types/api/Guests.ts"
+    import {GuestsData} from "../types/api/Guests.ts"
     import Modal from "../components/Modal.vue"
     import Button from "../components/Button.vue"
     import CarNumberInput from "../components/CarNumberInput.vue"
