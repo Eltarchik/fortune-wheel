@@ -1,5 +1,5 @@
-interface AddressData {
-    auto_numbers: string[]
+export interface AddressData {
+    address: string
     yard_id: number
 }
 
@@ -7,5 +7,5 @@ export interface UserData {
     id: number,
     phone: string,
     name: string,
-    addresses: Record<string, AddressData>
+    addresses: AddressData[]
 }

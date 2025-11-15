@@ -1,30 +1,25 @@
 import { defineStore } from 'pinia'
 
 interface AuthState {
-    token: string | null
+    userId: number | null
 }
 
 interface AuthActions {
-    setToken: (token: string) => void
-    loadToken: () => void
+    setUserId: (id: number) => void
     logout: () => void
 }
 
 export const useAuthStore = defineStore<"auth", AuthState, {}, AuthActions>('auth', {
     state: () => ({
-        token: null
+        userId: null
     }),
     actions: {
-        setToken(token: string) {
-            this.token = token
-            localStorage.setItem('token', token)
-        },
-        loadToken() {
-            this.token = localStorage.getItem('token')
+        setUserId(id: number) {
+            this.userId = id
         },
         logout() {
-            this.token = null
-            localStorage.removeItem('token')
+            this.userId = null
+            localStorage.removeItem('id')
         }
     },
 })

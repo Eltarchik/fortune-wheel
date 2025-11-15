@@ -5,31 +5,26 @@
     import Modal from "../components/Modal.vue"
     import {onMounted, ref} from "vue"
     import CarNumber from "../components/CarNumber.vue"
-    import {UserData} from "../types/api/UserData.ts"
+    import {AddressData, UserData} from "../types/api/UserData.ts"
     import RightArrowIcon from "../icons/RightArrowIcon.vue"
     import PlusIcon from "../icons/PlusIcon.vue"
     import CarNumberInput from "../components/CarNumberInput.vue"
-    import Button from "../components/Button.vue"
+    import BasicButton from "../components/BasicButton.vue"
     import {validateNumber} from "../utils/CarNumbers.ts"
-    import CheckBox from "../components/CheckBox.vue"
-    import { fetch } from "@tauri-apps/plugin-http"
     import {useRouter} from "vue-router"
+    import {apiFetch, deleteAuth, getAuthOrGotoAuth} from "../utils/Auth.ts"
+    import {Invite} from "../types/api/Invite.ts";
+    import {Yard} from "../types/api/Yard.ts";
 
     interface UserParam {
         title: string
         content: string
     }
 
-    interface Courtyard {
-        id: number
-        address: string
-        carNumbers: string[]
-    }
-
     interface UserInfo {
         name: UserParam
         phone: UserParam
-        courtyards: Courtyard[]
+        courtyards: AddressData[]
     }
 
     const userInfo = ref<UserInfo>({
@@ -44,13 +39,13 @@
         courtyards: []
     })
 
+    const invites = ref<Invite[]>([])
+
     interface ModalData {
         yardId: number
         title: string
         numbers: string[]
     }
-
-    const mockUserId = 3
 
     const router = useRouter()
 
@@ -60,13 +55,18 @@
 
     const refNewNumber = ref<string | undefined>(undefined)
 
-    const showModal = (courtyard: Courtyard) => {
+    const showModal = async (yard: AddressData) => {
         modalData.value = {
-            yardId: courtyard.id,
-            title: courtyard.address,
-            numbers: courtyard.carNumbers
+            yardId: yard.yard_id,
+            title: yard.address,
+            numbers: await getCarNumbers(yard.yard_id)
         }
         modalIsOpen.value = true
+    }
+
+    const getCarNumbers = async (yardId: number) => {
+        const data = await apiFetch(router, `yard/user-auto/?yard_id=${yardId}`)
+        return data.automobiles as string[]
     }
 
     const onModalClose = () => {
@@ -78,21 +78,15 @@
     const addNumber = async () => {
         if (!refNewNumber.value || !validateNumber(refNewNumber.value) || ! modalData.value) return
 
+        const userId = (await getAuthOrGotoAuth(router))?.id
+        if (!userId) return
+
         const body = JSON.stringify({
             auto_number: refNewNumber.value,
-            owner: mockUserId,
             yard_id: [modalData.value.yardId]
         })
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/yard/add-auto/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body
-        })
-
-        if (!response.ok) return
+        await apiFetch(router, "yard/add-auto/", { method: "POST", body })
 
         addingNumberMode.value = false
         modalData.value.numbers.push(refNewNumber.value)
@@ -104,21 +98,51 @@
         addingNumberMode.value = true
     }
 
+    const logout = async () => {
+        await deleteAuth()
+
+        await router.push('/auth')
+    }
+
+    const acceptInvite = async (yard: Yard) => {
+        const body = JSON.stringify({
+            type: "accept",
+            yard_id: yard.id
+        })
+
+        const resp = await reactInvite(body)
+        if (resp.error) return
+
+        userInfo.value.courtyards.push({
+            address: yard.address,
+            yard_id: yard.id
+        })
+
+        invites.value = invites.value.filter(invite => invite.yard.id !== yard.id)
+    }
+
+    const rejectInvite = async (yard: Yard) => {
+        const body = JSON.stringify({
+            type: "reject",
+            yard_id: yard.id
+        })
+        await reactInvite(body)
+
+        invites.value = invites.value.filter(invite => invite.yard.id !== yard.id)
+    }
+
+    const reactInvite = async (body: string) => {
+        return await apiFetch(router, "yard/invites/", { method: "POST", body }) as { error?: "" }
+    }
+
     onMounted(async () => {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/account/${mockUserId}/`)
-        const userData: UserData = await response.json()
+        const userData: UserData = await apiFetch(router, "users/account/")
 
         userInfo.value.name.content = userData.name || "Не указано"
         userInfo.value.phone.content = userData.phone || "Не указан"
-        userInfo.value.courtyards = Object
-            .entries(userData.addresses)
-            .map(([address, data]) => ({
-                id: data.yard_id,
-                address,
-                carNumbers: data.auto_numbers
-            }))
+        userInfo.value.courtyards = userData.addresses
 
-        if (!userInfo.value.courtyards.length) return
+        invites.value = await apiFetch(router, "yard/invites/")
     })
 
 </script>
@@ -141,16 +165,26 @@
                                     <PlusIcon color="#000000" size="32" />
                                 </button>
                             </div>
-                            <CarNumber :number="number" large v-for="number in [...modalData?.numbers].reverse()" :key="number" />
+                            <CarNumber :number="number" large v-for="number in [...(modalData?.numbers || [])].reverse()" :key="number" />
                         </div>
                     </Modal>
-                    <button v-for="courtyard in userInfo.courtyards" :key="courtyard.id"
+                    <button v-for="courtyard in userInfo.courtyards" :key="courtyard.yard_id"
                             class="manage-cars"
                             @click="showModal(courtyard)"
                     >
                         <Text color="#3F88E4">{{ courtyard.address }}</Text>
                         <RightArrowIcon color="#3F88E4"/>
                     </button>
+                    <div class="invite" v-for="invite in invites" :key="invite.id">
+                        <div class="text">
+                            <Text color="#FFFFFF">{{ invite.yard.address }}</Text>
+                            <div class="point"></div>
+                        </div>
+                        <div class="buttons">
+                            <BasicButton small accent @click="acceptInvite(invite.yard)">Принять</BasicButton>
+                            <BasicButton small @click="rejectInvite(invite.yard)">Отклонить</BasicButton>
+                        </div>
+                    </div>
                 </div>
             </ContentBlock>
 
@@ -165,7 +199,7 @@
         </div>
 
         <footer class="footer">
-            <Button :on-click="() => router.push('/auth')">Выйти</Button>
+            <BasicButton @click="logout">Выйти</BasicButton>
         </footer>
     </div>
 </template>
@@ -174,6 +208,7 @@
     .profile {
         display: flex;
         flex-direction: column;
+        flex-grow: 1;
         justify-content: space-between;
         height: 100%;
         overflow: hidden;
@@ -199,6 +234,30 @@
         gap: 4px;
         align-items: center;
         cursor: pointer;
+    }
+
+    .invite {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .text {
+            display: flex;
+            gap: 8px;
+
+            .point {
+                display: flex;
+                height: 6px;
+                width: 6px;
+                background-color: #FF0000;
+                border-radius: 50%;
+            }
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+        }
     }
 
     .profile {

@@ -8,13 +8,15 @@
     import {ref} from "vue"
     import {validatePhone} from "../utils/InputValidations.ts"
     import {Preferences} from "@capacitor/preferences"
-    import {useRouter} from "vue-router"
-    import ErrorIcon from "../icons/ErrorIcon.vue"
+    import BasicInput from "../components/inputs/BasicInput.vue";
+    import {useRouter} from "vue-router";
+    import ErrorIcon from "../icons/ErrorIcon.vue";
     import {AuthData} from "../types/api/Auth.ts";
     import { fetch } from "@tauri-apps/plugin-http"
 
     const router = useRouter()
 
+    const name = ref<string>("")
     const phone = ref<string>("")
     const password = ref<string>("")
 
@@ -30,19 +32,21 @@
     }
 
     const allFieldsIsValid = () => {
-        return phone.value && validatePhone(phone.value) && password.value.trim()
+        return phone.value && validatePhone(phone.value) && password.value.trim() && name.value.trim()
     }
 
     const submit = async () => {
         if (!allFieldsIsValid()) return
 
         const body = JSON.stringify({
+            full_name: name.value,
             phone: phone.value.replace(/\+7/g, "8"),
             password: password.value,
+            password_confirm: password.value,
         })
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login/`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -76,21 +80,25 @@
 
 <template>
     <div class="wrapper">
-        <Heading :size="HeadingSize.LARGE">Авторизация</Heading>
+        <Heading :size="HeadingSize.LARGE">Регистрация</Heading>
         <div class="form">
+            <BasicInput v-model="name" placeholder="ФИО"
+                        :error="invalidData"
+                        @blur="invalidData = false"
+            />
             <PhoneInput v-model="phone"
                         :error="!!phoneErrorMsg || invalidData"
                         :error-msg="phoneErrorMsg || undefined"
                         @blur="validatePhoneInput(); invalidData = false"
             />
-            <PasswordInput v-model="password" :error="invalidData" @blur="invalidData = false" />
-            <div class="account-not-found" v-if="invalidData">
+            <div class="invalid-data" v-if="invalidData">
                 <ErrorIcon color="#FFFFFF" />
-                <Text color="#FFFFFF">Аккаунт не найден</Text>
+                <Text color="#FFFFFF">Некорректные данные</Text>
             </div>
-            <BasicButton accent @click="submit">Войти</BasicButton>
+            <PasswordInput v-model="password" :error="invalidData" @blur="invalidData = false" />
+            <BasicButton accent @click="submit">Создать аккаунт</BasicButton>
             <Text color="#FFFFFF" class="text">
-                Нет аккаунта? <router-link to="/register" class="link">Создать аккаунт</router-link>
+                Уже есть аккаунт? <router-link to="/auth" class="link">Авторизоваться</router-link>
             </Text>
         </div>
     </div>
@@ -119,7 +127,7 @@
         color: #3F88E4;
     }
 
-    .account-not-found {
+    .invalid-data {
         display: flex;
         gap: 8px;
     }

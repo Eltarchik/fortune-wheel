@@ -1,50 +1,27 @@
 <script setup lang="ts">
 
     import NavigationBar from "./components/NavigationBar.vue"
-    import {onMounted} from "vue"
-    import {useAuthStore} from "./stores/auth.ts"
-    import {useRouter} from "vue-router"
+    import {onMounted, ref} from "vue"
     import {useRoute, useRouter} from "vue-router"
+    import {Preferences} from "@capacitor/preferences"
+
+    const loaded = ref<boolean>(false)
+    const router = useRouter()
+    const route = useRoute()
 
     onMounted(async () => {
-        const router = useRouter()
-        const route = useRoute()
+        const token = (await Preferences.get({key: "access_token"})).value
 
-        if (route.path === '/') {
-            await router.push('/cars')
-        }
-
-        try {
-            const body = JSON.stringify({
-                phone: import.meta.env.VITE_ADMIN_LOGIN,
-                password: import.meta.env.VITE_ADMIN_PASSWORD
-            })
-
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/token/`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body
-            })
-
-            if (!response.ok) return
-
-            const token = (await response.json()).access as string
-            const auth = useAuthStore()
-            auth.setToken(token)
-
-        } catch (error) {
-            console.error(error)
-        }
+        if (!token) await router.push("/auth")
+        loaded.value = true
     })
 
 </script>
 
 <template>
     <main class="container">
-        <NavigationBar />
-        <RouterView/>
+        <NavigationBar v-if="loaded && !['/auth', '/register'].includes(route.path)" />
+        <RouterView v-if="loaded" />
     </main>
 </template>
 

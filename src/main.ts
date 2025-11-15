@@ -7,11 +7,14 @@ import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router"
 import Cars from "./pages/Cars.vue"
 import {createPinia} from "pinia"
 import Auth from "./pages/Auth.vue"
+import Register from "./pages/Register.vue"
 
 const routes: Readonly<RouteRecordRaw[]> = [
     { name: 'profile', path: '/profile', component: Profile },
     { name: 'cars', path: '/cars', component: Cars },
     { name: 'auth', path: '/auth', component: Auth },
+    { name: 'register', path: '/register', component: Register },
+    { path: '/', redirect: '/cars' },
 ]
 
 const router = createRouter({

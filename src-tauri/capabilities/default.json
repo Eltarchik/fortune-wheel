@@ -10,7 +10,8 @@
       "identifier": "http:default",
       "allow": [
         { "url": "https://*.tauri.app" },
-        { "url": "http://79.174.77.87/*" }
+        { "url": "http://79.174.77.87/*" },
+        { "url": "https://portal-tech-kpp.ru/*" }
       ],
       "deny": [{ "url": "https://private.tauri.app" }]
     },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-    import TextInput from "../components/TextInput.vue"
+    import TextInput from "../components/inputs/BasicInput.vue"
     import ContentBlock from "../components/ContentBlock.vue"
     import TimelineWithNumber from "../components/TimelineWithNumber.vue"
     import {computed, onMounted, ref} from "vue"
@@ -8,7 +8,10 @@
     import RightArrowIcon from "../icons/RightArrowIcon.vue"
     import Modal from "../components/Modal.vue"
     import {formatDayLabel, formatTime} from "../utils/DateAndTime.ts"
+    import {getAuthOrGotoAuth, safeResponse} from "../utils/Auth.ts";
+    import {useRouter} from "vue-router";
     import { fetch } from "@tauri-apps/plugin-http"
+    import {HistoryEntry, Yard} from "../types/api/Yard.ts";
 
     interface CarActionsEntry {
         carNumber: string
@@ -21,6 +24,8 @@
         entries: CarActionsEntry[]
     }
 
+    const router = useRouter()
+
     const daysHistory = ref<EntriesWithDay[]>([])
 
     const yards = ref<Yard[]>([])
@@ -28,9 +33,12 @@
 
     const searchText = ref<string>("")
 
-    const fetchHistory = async (): Promise<HistoryEntry[]> => {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/yard/history/`)
-        return await response.json()
+    const fetchHistory = (token: string): Promise<Response> => {
+        return fetch(`${import.meta.env.VITE_API_BASE_URL}/yard/user-history/`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        })
     }
 
     const showYardsModal = ref<boolean>(false)
@@ -51,7 +59,10 @@
     })
 
     onMounted(async () => {
-        const history = await fetchHistory()
+        const token = (await getAuthOrGotoAuth(router))?.token
+        if (!token) return
+
+        const history = await safeResponse(router, (auth) => fetchHistory(auth.token)) as HistoryEntry[]
 
         history.forEach(entry => {
             if (!yards.value
@@ -68,7 +79,10 @@
     })
 
     const loadHistory = async () => {
-        const history = await fetchHistory()
+        const token = (await getAuthOrGotoAuth(router))?.token
+        if (!token) return
+
+        const history = await safeResponse(router, (auth) => fetchHistory(auth.token)) as HistoryEntry[]
         const filteredHistory = history.filter(entry => entry.yard.id === selectedYardId.value)
 
         const byDay: Record<string, HistoryEntry[]> = {}
@@ -82,7 +96,7 @@
 
         for (const [day, dayEntries] of Object.entries(byDay)) {
             dayEntries.sort((a, b) => {
-                const nameDiff = a.auto.auto_number.localeCompare(b.auto.auto_number)
+                const nameDiff = a.auto_number.localeCompare(b.auto_number)
                 if (nameDiff !== 0) return nameDiff
                 return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             })
@@ -91,7 +105,7 @@
 
             const byCar: Record<string, HistoryEntry[]> = {}
             for (const e of dayEntries) {
-                const num = e.auto.auto_number
+                const num = e.auto_number
                 if (!byCar[num]) byCar[num] = []
                 byCar[num].push(e)
             }

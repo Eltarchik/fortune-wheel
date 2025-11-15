@@ -5,19 +5,15 @@
     import ContentBlock from "../components/ContentBlock.vue"
     import TimelineWithNumber from "../components/TimelineWithNumber.vue"
     import {computed, onMounted, ref} from "vue"
-    import {GuestsData} from "../types/api/Guests.ts"
+    import {Guest, GuestsData} from "../types/api/Guests.ts"
     import Modal from "../components/Modal.vue"
-    import Button from "../components/Button.vue"
+    import BasicButton from "../components/BasicButton.vue"
     import CarNumberInput from "../components/CarNumberInput.vue"
-    import {UserData} from "../types/api/UserData.ts"
+    import {AddressData, UserData} from "../types/api/UserData.ts"
     import CheckBox from "../components/CheckBox.vue"
-    import {useAuthStore} from "../stores/auth.ts"
+    import {safeResponse} from "../utils/Auth.ts";
+    import {useRouter} from "vue-router";
     import { fetch } from "@tauri-apps/plugin-http"
-
-    interface Yard {
-        address: string
-        id: number
-    }
 
     interface GuestData {
         id: number
@@ -28,12 +24,12 @@
         alreadyInYard: boolean
     }
 
-    const mockUserId = 1
+    const router = useRouter()
 
     const currentGuestsData = ref<GuestData[]>([])
     const currentTime = ref<Date>(new Date())
 
-    const yards = ref<Yard[]>([])
+    const yards = ref<AddressData[]>([])
 
     const showModal = ref<boolean>(false)
     const newGuestNumber = ref<string | undefined>(undefined)
@@ -49,34 +45,36 @@
     const timeToEnter = ref<string>("01:00")
 
     onMounted(async () => {
-        const guestsResponse =
-            await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current-guests/?invite_by_id=${mockUserId}`)
-        const guestsData: GuestsData = await guestsResponse.json()
+        const guestsData: GuestsData = await safeResponse(router, (auth) =>
+            fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current-guests/`, {
+                headers: {
+                    "Authorization": `Bearer ${auth.token}`
+                }
+            })
+        )
 
         currentGuestsData.value = guestsData.active_guests.map(guest => ({
             id: guest.id,
             carNumber: guest.guest_auto_number,
             yardAddress: guest.yard_address,
             alreadyInYard: guest.enter_time !== null,
-            timeLeft: getRemainingTime(guest.entry_timeout),
-            timelinePercent: getTimelinePercent(guest.created_at, guest.entry_timeout)
+            timeLeft: getRemainingTime(guest.entry_timeout!),
+            timelinePercent: getTimelinePercent(guest.created_at, guest.entry_timeout!)
         }))
 
         currentTime.value = new Date(guestsData.current_time)
 
-        const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/account/${mockUserId}/`)
-        const userData: UserData = await userResponse.json()
+        const userData: UserData = await safeResponse(router, (auth) => fetch(`${import.meta.env.VITE_API_BASE_URL}/users/account/`, {
+            headers: {
+                "Authorization": `Bearer ${auth.token}`
+            }
+        }))
 
-        yards.value = Object
-            .entries(userData.addresses)
-            .map(([address, data]) => ({
-                address,
-                id: data.yard_id
-            }))
+        yards.value = userData.addresses
 
         if (!yards.value.length) return
-        yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ id }) => [id, false]))
-        yardsCheckboxValues.value[yards.value[0].id] = true
+        yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ yard_id }) => [yard_id, false]))
+        yardsCheckboxValues.value[yards.value[0].yard_id] = true
     })
 
     const getTimelinePercent = (startTimeString: string, endTimeString: string): number => {
@@ -115,7 +113,7 @@
         showModal.value = true
 
         if (!yards.value.length) return
-        yardsCheckboxValues.value[yards.value[0].id] = true
+        yardsCheckboxValues.value[yards.value[0].yard_id] = true
     }
 
     const onModalClose = () => {
@@ -126,6 +124,7 @@
     }
 
     const addGuest = async () => {
+
         if (!newGuestNumber.value || guestYardId.value === null) return
 
         const [hours, minutes] = timeToEnter.value.split(":").map(Number)
@@ -134,21 +133,28 @@
         entryTimeout.setHours(entryTimeout.getHours() + hours)
         entryTimeout.setMinutes(entryTimeout.getMinutes() + minutes)
 
-        const auth = useAuthStore()
-
         const body = JSON.stringify({
             guest_auto_number: newGuestNumber.value,
             yard_id: guestYardId.value,
             entry_timeout: entryTimeout.toISOString()
         })
 
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/create-guestentry/`, {
+        const data: Guest = await safeResponse(router, (auth) => fetch(`${import.meta.env.VITE_API_BASE_URL}/users/create-guestentry/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${auth.token}`
             },
             body
+        }))
+
+        currentGuestsData.value.push({
+            id: data.id,
+            carNumber: data.guest_auto_number,
+            yardAddress: data.yard_address,
+            alreadyInYard: data.enter_time !== null,
+            timeLeft: getRemainingTime(data.entry_timeout!),
+            timelinePercent: getTimelinePercent(data.created_at, data.entry_timeout!)
         })
     }
 
@@ -159,12 +165,12 @@
         <Modal title="" v-model:show="showModal" :on-close="onModalClose">
             <CarNumberInput class="guest-car-number-input" v-model="newGuestNumber"/>
             <div class="address-row">
-                <CheckBox v-model="yardsCheckboxValues[yard.id]"
+                <CheckBox v-model="yardsCheckboxValues[yard.yard_id]"
                           v-for="yard in yards"
-                          :key="yard.id"
+                          :key="yard.yard_id"
                           @change="() => {
                               resetYardsCheckboxValues()
-                              yardsCheckboxValues[yard.id] = true
+                              yardsCheckboxValues[yard.yard_id] = true
                           }"
                 >
                     {{yard.address}}
@@ -178,12 +184,12 @@
             </div>
 
             <template #buttons>
-                <Button accent class="add-guest-button"
-                        :on-click="() => {
-                            addGuest()
+                <BasicButton accent class="add-guest-button"
+                        @click="async () => {
+                            await addGuest()
                             onModalClose()
                         }"
-                >Добавить</Button>
+                >Добавить</BasicButton>
             </template>
         </Modal>
         <button class="open-add-guest-modal"
