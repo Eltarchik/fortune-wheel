@@ -56,7 +56,8 @@
                 ...guestData,
                 timeLeft: getRemainingTime(guestData.entryTimeout!),
                 timelinePercent: getTimelinePercent(guestData.createdAt, guestData.entryTimeout!)
-            }))
+
+            })).filter(guestData => new Date(guestData.entryTimeout!).getTime() > currentTime.value.getTime())
 
         }, 1000)
     }
