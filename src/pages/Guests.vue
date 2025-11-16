@@ -4,7 +4,7 @@
     import PlusIcon from "../icons/PlusIcon.vue"
     import ContentBlock from "../components/ContentBlock.vue"
     import TimelineWithNumber from "../components/TimelineWithNumber.vue"
-    import {computed, onMounted, ref} from "vue"
+    import {computed, onBeforeUnmount, onMounted, ref} from "vue"
     import {Guest, GuestsData} from "../types/api/Guests.ts"
     import Modal from "../components/Modal.vue"
     import BasicButton from "../components/BasicButton.vue"
@@ -20,6 +20,8 @@
         carNumber: string
         yardAddress: string
         timeLeft: string
+        entryTimeout: string | null
+        createdAt: string
         timelinePercent: number
         alreadyInYard: boolean
     }
@@ -44,7 +46,24 @@
 
     const timeToEnter = ref<string>("01:00")
 
+    let timer: number
+
+    const createTimer = () => {
+        return setInterval(() => {
+            currentTime.value = new Date()
+
+            currentGuestsData.value = currentGuestsData.value.map(guestData => ({
+                ...guestData,
+                timeLeft: getRemainingTime(guestData.entryTimeout!),
+                timelinePercent: getTimelinePercent(guestData.createdAt, guestData.entryTimeout!)
+            }))
+
+        }, 1000)
+    }
+
     onMounted(async () => {
+        timer = createTimer()
+
         const guestsData: GuestsData = await safeResponse(router, (auth) =>
             fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current-guests/`, {
                 headers: {
@@ -58,11 +77,11 @@
             carNumber: guest.guest_auto_number,
             yardAddress: guest.yard_address,
             alreadyInYard: guest.enter_time !== null,
+            entryTimeout: guest.entry_timeout,
+            createdAt: guest.created_at,
             timeLeft: getRemainingTime(guest.entry_timeout!),
             timelinePercent: getTimelinePercent(guest.created_at, guest.entry_timeout!)
         }))
-
-        currentTime.value = new Date(guestsData.current_time)
 
         const userData: UserData = await safeResponse(router, (auth) => fetch(`${import.meta.env.VITE_API_BASE_URL}/users/account/`, {
             headers: {
@@ -76,6 +95,8 @@
         yardsCheckboxValues.value = Object.fromEntries(yards.value.map(({ yard_id }) => [yard_id, false]))
         yardsCheckboxValues.value[yards.value[0].yard_id] = true
     })
+
+    onBeforeUnmount(() => clearInterval(timer))
 
     const getTimelinePercent = (startTimeString: string, endTimeString: string): number => {
         const start = new Date(startTimeString)
@@ -153,6 +174,8 @@
             carNumber: data.guest_auto_number,
             yardAddress: data.yard_address,
             alreadyInYard: data.enter_time !== null,
+            entryTimeout: data.entry_timeout,
+            createdAt: data.created_at,
             timeLeft: getRemainingTime(data.entry_timeout!),
             timelinePercent: getTimelinePercent(data.created_at, data.entry_timeout!)
         })
